@@ -34,6 +34,7 @@ jobs:
           mkdir -p deliverylog-classic/app/src/main/assets
           base64 -d deliverylog-android/classic-native.b64 | xz -d | tar -xf - -C deliverylog-classic
           base64 -d deliverylog-android/original-design.b64 | xz -d | tar -xf - -C deliverylog-classic/app/src/main/assets
+          rm -f deliverylog-classic/app/src/main/java/com/chamsosik/deliverylog/GpsListener.java
           test -f deliverylog-classic/app/src/main/assets/index.html
           test -f deliverylog-classic/app/src/main/java/com/chamsosik/deliverylog/MainActivity.java
       - name: Build original-design APK

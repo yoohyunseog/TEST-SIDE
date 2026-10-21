@@ -35,7 +35,28 @@ jobs:
           base64 -d deliverylog-android/classic-native.b64 | xz -d | tar -xf - -C deliverylog-classic
           base64 -d deliverylog-android/original-design.b64 | xz -d | tar -xf - -C deliverylog-classic/app/src/main/assets
           rm -f deliverylog-classic/app/src/main/java/com/chamsosik/deliverylog/GpsListener.java
-          test -f deliverylog-classic/app/src/main/assets/index.html
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("deliverylog-classic/app/src/main/assets/app.js")
+          s = p.read_text(encoding="utf-8")
+          before = """    if (state.activePickup) {
+      drawRoute(state.activePickup.routePoints,'#ff9b3c',6);
+      const p=toScreen(state.activePickup.location);
+      ctx.beginPath();ctx.arc(p.x,p.y,10,0,Math.PI*2);ctx.fillStyle='#7959db';ctx.fill();ctx.strokeStyle='white';ctx.lineWidth=2;ctx.stroke();
+      ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.fillText('P',p.x,p.y);
+    }"""
+          after = """    if (state.activePickup) {
+      drawRoute(state.activePickup.routePoints,'#ff9b3c',6);
+      if (state.activePickup.location) {
+        const p=toScreen(state.activePickup.location);
+        ctx.beginPath();ctx.arc(p.x,p.y,10,0,Math.PI*2);ctx.fillStyle='#7959db';ctx.fill();ctx.strokeStyle='white';ctx.lineWidth=2;ctx.stroke();
+        ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.fillText('P',p.x,p.y);
+      }
+    }"""
+          assert s.count(before) == 1, "Expected to patch pickup GPS null handling"
+          p.write_text(s.replace(before,after),encoding="utf-8")
+          PY
+                    test -f deliverylog-classic/app/src/main/assets/index.html
           test -f deliverylog-classic/app/src/main/java/com/chamsosik/deliverylog/MainActivity.java
       - name: Build original-design APK
         working-directory: deliverylog-classic

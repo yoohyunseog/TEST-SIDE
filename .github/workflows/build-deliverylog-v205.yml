@@ -1,8 +1,7 @@
 name: Build DeliveryLog v2.0.5 Test APK
 on:
   push:
-    branches:
-      - deliverylog-v2.0.5-build
+    branches: [deliverylog-v2.0.5-build]
     paths:
       - 'deliverylog-android/**'
       - '.github/workflows/build-deliverylog-v205.yml'
@@ -19,10 +18,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Android SDK
-        uses: android-actions/setup-android@v3
-      - name: Install Android SDK 35
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Install SDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
       - name: Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
         with:

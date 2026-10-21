@@ -29,12 +29,19 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Build debug APK
-        working-directory: deliverylog-android
+      - name: Unpack original design and Android wrapper
+        run: |
+          mkdir -p deliverylog-classic/app/src/main/assets
+          base64 -d deliverylog-android/classic-native.b64 | xz -d | tar -xf - -C deliverylog-classic
+          base64 -d deliverylog-android/original-design.b64 | xz -d | tar -xf - -C deliverylog-classic/app/src/main/assets
+          test -f deliverylog-classic/app/src/main/assets/index.html
+          test -f deliverylog-classic/app/src/main/java/com/chamsosik/deliverylog/MainActivity.java
+      - name: Build original-design APK
+        working-directory: deliverylog-classic
         run: gradle :app:assembleDebug --no-daemon --stacktrace
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: DeliveryLog-v2.0.5-GPS-Test-APK
-          path: deliverylog-android/app/build/outputs/apk/debug/app-debug.apk
+          name: DeliveryLog-v2.0.5-Classic-Design-APK
+          path: deliverylog-classic/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error

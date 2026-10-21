@@ -1,4 +1,4 @@
-name: Build DeliveryLog v2.0.5 Test APK
+name: Build DeliveryLog v2.0.6 Risk Buttons APK
 on:
   push:
     branches: [deliverylog-v2.0.5-build]
@@ -18,52 +18,39 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Install SDK
+      - name: Install Android SDK
         run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
           SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n1)"
-          if [ -z "$SDKMANAGER" ]; then echo "No sdkmanager found"; exit 1; fi
+          test -n "$SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
       - name: Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Unpack original design and Android wrapper
+      - name: Restore original app and patch risk buttons
         run: |
           mkdir -p deliverylog-classic/app/src/main/assets
           base64 -d deliverylog-android/classic-native.b64 | xz -d | tar -xf - -C deliverylog-classic
           base64 -d deliverylog-android/original-design.b64 | xz -d | tar -xf - -C deliverylog-classic/app/src/main/assets
+          base64 -d deliverylog-android/risk-v206.b64 | xz -d | tar -xf - -C deliverylog-classic/app/src/main/assets
           rm -f deliverylog-classic/app/src/main/java/com/chamsosik/deliverylog/GpsListener.java
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("deliverylog-classic/app/src/main/assets/app.js")
-          s = p.read_text(encoding="utf-8")
-          before = """    if (state.activePickup) {
-      drawRoute(state.activePickup.routePoints,'#ff9b3c',6);
-      const p=toScreen(state.activePickup.location);
-      ctx.beginPath();ctx.arc(p.x,p.y,10,0,Math.PI*2);ctx.fillStyle='#7959db';ctx.fill();ctx.strokeStyle='white';ctx.lineWidth=2;ctx.stroke();
-      ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.fillText('P',p.x,p.y);
-    }"""
-          after = """    if (state.activePickup) {
-      drawRoute(state.activePickup.routePoints,'#ff9b3c',6);
-      if (state.activePickup.location) {
-        const p=toScreen(state.activePickup.location);
-        ctx.beginPath();ctx.arc(p.x,p.y,10,0,Math.PI*2);ctx.fillStyle='#7959db';ctx.fill();ctx.strokeStyle='white';ctx.lineWidth=2;ctx.stroke();
-        ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.fillText('P',p.x,p.y);
-      }
-    }"""
-          assert s.count(before) == 1, "Expected to patch pickup GPS null handling"
-          p.write_text(s.replace(before,after),encoding="utf-8")
-          PY
-                    test -f deliverylog-classic/app/src/main/assets/index.html
+          sed -i 's/com.chamsosik.deliverylog.classic/com.chamsosik.deliverylog.riskdemo/' deliverylog-classic/app/build.gradle
+          sed -i "s/versionCode 26/versionCode 27/;s/2.0.5-classic/2.0.6-risk/" deliverylog-classic/app/build.gradle
+          sed -i 's/배달로그 클래식/배달로그 위험기록/' deliverylog-classic/app/src/main/AndroidManifest.xml
+          test -f deliverylog-classic/app/src/main/assets/index.html
+          grep -q 'data-risk-kind="행인"' deliverylog-classic/app/src/main/assets/index.html
           test -f deliverylog-classic/app/src/main/java/com/chamsosik/deliverylog/MainActivity.java
-      - name: Build original-design APK
+      - name: Build debug APK
         working-directory: deliverylog-classic
         run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: Confirm built assets
+        run: |
+          unzip -l deliverylog-classic/app/build/outputs/apk/debug/app-debug.apk | grep 'assets/app.js'
+          unzip -l deliverylog-classic/app/build/outputs/apk/debug/app-debug.apk | grep 'assets/index.html'
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: DeliveryLog-v2.0.5-Classic-Design-APK
+          name: DeliveryLog-v2.0.6-Risk-Buttons-APK
           path: deliverylog-classic/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error

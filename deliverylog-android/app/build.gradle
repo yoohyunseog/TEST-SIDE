@@ -1,0 +1,2 @@
+plugins { id 'com.android.application' }
+android { namespace 'com.chamsosik.deliverylog.testbuild'; compileSdk 35; defaultConfig { applicationId 'com.chamsosik.deliverylog.testbuild'; minSdk 26; targetSdk 33; versionCode 25; versionName '2.0.5-test' } }

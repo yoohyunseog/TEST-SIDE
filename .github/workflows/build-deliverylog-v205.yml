@@ -1,0 +1,38 @@
+name: Build DeliveryLog v2.0.5 Test APK
+on:
+  push:
+    branches:
+      - deliverylog-v2.0.5-build
+    paths:
+      - 'deliverylog-android/**'
+      - '.github/workflows/build-deliverylog-v205.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install Android SDK 35
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build debug APK
+        working-directory: deliverylog-android
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeliveryLog-v2.0.5-GPS-Test-APK
+          path: deliverylog-android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

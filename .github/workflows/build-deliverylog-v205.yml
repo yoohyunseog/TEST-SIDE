@@ -1,4 +1,4 @@
-name: Build DeliveryLog v2.0.6 Risk Buttons APK
+name: Build DeliveryLog v2.0.9 Route and Incident Copy
 on:
   push:
     branches: [deliverylog-v2.0.5-build]
@@ -41,6 +41,17 @@ jobs:
           test -f deliverylog-classic/app/src/main/assets/index.html
           grep -q 'data-risk-kind="행인"' deliverylog-classic/app/src/main/assets/index.html
           test -f deliverylog-classic/app/src/main/java/com/chamsosik/deliverylog/MainActivity.java
+      - name: Apply v2.0.9 GPS and clipboard patch
+        run: |
+          base64 -d deliverylog-android/v209-upgrade.patch.xz.b64 | xz -d > /tmp/route-copy-v209.patch
+          (cd deliverylog-classic && patch -p1 --batch --fuzz=0 < /tmp/route-copy-v209.patch)
+          sed -i 's/deliverylog.riskdemo/deliverylog.copydemo/;s/versionCode 27/versionCode 29/;s/2.0.6-risk/2.0.9-copy/' deliverylog-classic/app/build.gradle
+          sed -i 's/배달로그 위험기록/배달로그 동선복사/' deliverylog-classic/app/src/main/AndroidManifest.xml
+          grep -q 'copyTodayRouteBtn' deliverylog-classic/app/src/main/assets/index.html
+          grep -q 'copyRouteData' deliverylog-classic/app/src/main/assets/app.js
+          grep -q 'DeliveryClipboard' deliverylog-classic/app/src/main/java/com/chamsosik/deliverylog/MainActivity.java
+          node --check deliverylog-classic/app/src/main/assets/app.js
+          node --check deliverylog-classic/app/src/main/assets/route-copy.js
       - name: Build debug APK
         working-directory: deliverylog-classic
         run: gradle :app:assembleDebug --no-daemon --stacktrace
@@ -48,9 +59,10 @@ jobs:
         run: |
           unzip -l deliverylog-classic/app/build/outputs/apk/debug/app-debug.apk | grep 'assets/app.js'
           unzip -l deliverylog-classic/app/build/outputs/apk/debug/app-debug.apk | grep 'assets/index.html'
+          unzip -l deliverylog-classic/app/build/outputs/apk/debug/app-debug.apk | grep 'assets/route-copy.js'
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: DeliveryLog-v2.0.6-Risk-Buttons-APK
+          name: DeliveryLog-v2.0.9-Route-Copy-APK
           path: deliverylog-classic/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error

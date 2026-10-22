@@ -44,7 +44,7 @@ jobs:
       - name: Apply v2.0.9 GPS and clipboard patch
         run: |
           base64 -d deliverylog-android/v209-upgrade.patch.xz.b64 | xz -d > /tmp/route-copy-v209.patch
-          sed '/^--- a\\/app\\/src\\/main\\/java\\/com\\/chamsosik\\/deliverylog\\/MainActivity.java$/,$d' /tmp/route-copy-v209.patch > /tmp/route-copy-assets.patch
+          python3 -c 'from pathlib import Path; s=Path("/tmp/route-copy-v209.patch").read_text(); Path("/tmp/route-copy-assets.patch").write_text(s.split("--- a/app/src/main/java/com/chamsosik/deliverylog/MainActivity.java")[0])'
           (cd deliverylog-classic && patch -p1 --batch --fuzz=0 < /tmp/route-copy-assets.patch)
           cp deliverylog-android/v209-MainActivity.java deliverylog-classic/app/src/main/java/com/chamsosik/deliverylog/MainActivity.java
           cp deliverylog-android/v209-TrackerService.java deliverylog-classic/app/src/main/java/com/chamsosik/deliverylog/TrackerService.java

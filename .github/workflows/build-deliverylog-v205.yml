@@ -1,7 +1,7 @@
-name: Build DeliveryLog v2.0.10 Live Preview and Copy
+name: Build DeliveryLog v2.0.11 Overlay Risk
 on:
   push:
-    branches: [deliverylog-v2.0.5-build]
+    branches: [deliverylog-v2.0.11-overlay-risk]
     paths:
       - 'deliverylog-android/**'
       - '.github/workflows/build-deliverylog-v205.yml'
@@ -63,6 +63,15 @@ jobs:
           grep -q 'routeCopyClipboardBtn' deliverylog-classic/app/src/main/assets/index.html
           grep -q 'refreshRouteCopyPreview' deliverylog-classic/app/src/main/assets/app.js
           node --check deliverylog-classic/app/src/main/assets/app.js
+      - name: Add v2.0.11 native risk overlay and enhanced tips
+        run: |
+          base64 -d deliverylog-android/v211-overlay-risk-files.tar.xz.b64 | xz -d | tar -xf - -C deliverylog-classic
+          grep -q 'riskOverlayOnBtn' deliverylog-classic/app/src/main/assets/index.html
+          grep -q 'deliveryNativeRisks' deliverylog-classic/app/src/main/assets/app.js
+          test -f deliverylog-classic/app/src/main/java/com/chamsosik/deliverylog/RiskOverlay.java
+          test -f deliverylog-classic/app/src/main/java/com/chamsosik/deliverylog/RiskQueue.java
+          grep -q 'com.chamsosik.deliverylog.riskoverlaydemo' deliverylog-classic/app/build.gradle
+          node --check deliverylog-classic/app/src/main/assets/app.js
       - name: Build debug APK
         working-directory: deliverylog-classic
         run: gradle :app:assembleDebug --no-daemon --stacktrace
@@ -74,6 +83,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: DeliveryLog-v2.0.10-Preview-Copy-Fix-APK
+          name: DeliveryLog-v2.0.11-Overlay-Risk-APK
           path: deliverylog-classic/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
